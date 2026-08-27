@@ -1,0 +1,259 @@
+{
+  "versao": 1,
+  "gerado_em_utc": "2026-08-27T13:35:27.193390+00:00",
+  "criterio_sintetico": {
+    "mapeamento": {
+      "0": "baixo",
+      "1": "médio",
+      "2_ou_mais": "alto"
+    },
+    "finalidade": "Critério sintético criado exclusivamente para permitir o confronto solicitado no desafio.",
+    "nao_representa": [
+      "regra real de PLD",
+      "regulação",
+      "metodologia do Itaú"
+    ],
+    "ressalvas": [
+      "Quantidade de sinalizações não equivale necessariamente ao risco real.",
+      "Divergência entre regra e agente não significa automaticamente que o agente errou.",
+      "As regras determinísticas são simplificadas e podem gerar falsos positivos."
+    ]
+  },
+  "registros": [
+    {
+      "posicao": 1,
+      "cliente_id": "CLI-014",
+      "sinais_regra_1": 0,
+      "sinais_regra_2": 3,
+      "total_sinalizacoes": 3,
+      "risco_esperado_regras": "alto",
+      "status_lote": "sucesso",
+      "status_llm": "sucesso",
+      "status_validacao_factual": "sem_alertas_automaticos",
+      "risco_llm": "médio",
+      "comparavel": true,
+      "concordancia": false,
+      "motivo_nao_comparavel": null,
+      "tools_utilizadas": [
+        "historico_cliente",
+        "perfil_canal",
+        "operacoes_do_dia"
+      ],
+      "modelo_utilizado": "gemini-3.6-flash"
+    },
+    {
+      "posicao": 2,
+      "cliente_id": "CLI-023",
+      "sinais_regra_1": 0,
+      "sinais_regra_2": 2,
+      "total_sinalizacoes": 2,
+      "risco_esperado_regras": "alto",
+      "status_lote": "erro",
+      "status_llm": "indisponivel_para_confronto",
+      "status_validacao_factual": "com_alertas",
+      "risco_llm": null,
+      "comparavel": false,
+      "concordancia": null,
+      "motivo_nao_comparavel": "Resposta com alerta factual; não pode ser tratada como parecer válido.",
+      "tools_utilizadas": [
+        "historico_cliente",
+        "operacoes_do_dia",
+        "operacoes_do_dia"
+      ],
+      "modelo_utilizado": "gemini-3.6-flash"
+    },
+    {
+      "posicao": 3,
+      "cliente_id": "CLI-028",
+      "sinais_regra_1": 0,
+      "sinais_regra_2": 2,
+      "total_sinalizacoes": 2,
+      "risco_esperado_regras": "alto",
+      "status_lote": "sucesso",
+      "status_llm": "sucesso",
+      "status_validacao_factual": "sem_alertas_automaticos",
+      "risco_llm": "médio",
+      "comparavel": true,
+      "concordancia": false,
+      "motivo_nao_comparavel": null,
+      "tools_utilizadas": [
+        "historico_cliente",
+        "operacoes_do_dia",
+        "perfil_canal"
+      ],
+      "modelo_utilizado": "gemini-3.6-flash"
+    },
+    {
+      "posicao": 4,
+      "cliente_id": "CLI-013",
+      "sinais_regra_1": 0,
+      "sinais_regra_2": 2,
+      "total_sinalizacoes": 2,
+      "risco_esperado_regras": "alto",
+      "status_lote": "erro",
+      "status_llm": "indisponivel_para_confronto",
+      "status_validacao_factual": null,
+      "risco_llm": null,
+      "comparavel": false,
+      "concordancia": null,
+      "motivo_nao_comparavel": "Erro técnico 429/quota; parecer final indisponível.",
+      "tools_utilizadas": [],
+      "modelo_utilizado": "gemini-3.6-flash"
+    },
+    {
+      "posicao": 5,
+      "cliente_id": "CLI-005",
+      "sinais_regra_1": 0,
+      "sinais_regra_2": 2,
+      "total_sinalizacoes": 2,
+      "risco_esperado_regras": "alto",
+      "status_lote": null,
+      "status_llm": "indisponivel_para_confronto",
+      "status_validacao_factual": null,
+      "risco_llm": null,
+      "comparavel": false,
+      "concordancia": null,
+      "motivo_nao_comparavel": "Sem registro persistido no lote; LLM indisponível para confronto.",
+      "tools_utilizadas": [],
+      "modelo_utilizado": null
+    },
+    {
+      "posicao": 6,
+      "cliente_id": "CLI-026",
+      "sinais_regra_1": 0,
+      "sinais_regra_2": 2,
+      "total_sinalizacoes": 2,
+      "risco_esperado_regras": "alto",
+      "status_lote": null,
+      "status_llm": "indisponivel_para_confronto",
+      "status_validacao_factual": null,
+      "risco_llm": null,
+      "comparavel": false,
+      "concordancia": null,
+      "motivo_nao_comparavel": "Sem registro persistido no lote; LLM indisponível para confronto.",
+      "tools_utilizadas": [],
+      "modelo_utilizado": null
+    },
+    {
+      "posicao": 7,
+      "cliente_id": "CLI-001",
+      "sinais_regra_1": 0,
+      "sinais_regra_2": 2,
+      "total_sinalizacoes": 2,
+      "risco_esperado_regras": "alto",
+      "status_lote": null,
+      "status_llm": "indisponivel_para_confronto",
+      "status_validacao_factual": null,
+      "risco_llm": null,
+      "comparavel": false,
+      "concordancia": null,
+      "motivo_nao_comparavel": "Sem registro persistido no lote; LLM indisponível para confronto.",
+      "tools_utilizadas": [],
+      "modelo_utilizado": null
+    },
+    {
+      "posicao": 8,
+      "cliente_id": "CLI-029",
+      "sinais_regra_1": 1,
+      "sinais_regra_2": 0,
+      "total_sinalizacoes": 1,
+      "risco_esperado_regras": "médio",
+      "status_lote": null,
+      "status_llm": "indisponivel_para_confronto",
+      "status_validacao_factual": null,
+      "risco_llm": null,
+      "comparavel": false,
+      "concordancia": null,
+      "motivo_nao_comparavel": "Sem registro persistido no lote; LLM indisponível para confronto.",
+      "tools_utilizadas": [],
+      "modelo_utilizado": null
+    },
+    {
+      "posicao": 9,
+      "cliente_id": "CLI-017",
+      "sinais_regra_1": 1,
+      "sinais_regra_2": 0,
+      "total_sinalizacoes": 1,
+      "risco_esperado_regras": "médio",
+      "status_lote": null,
+      "status_llm": "indisponivel_para_confronto",
+      "status_validacao_factual": null,
+      "risco_llm": null,
+      "comparavel": false,
+      "concordancia": null,
+      "motivo_nao_comparavel": "Sem registro persistido no lote; LLM indisponível para confronto.",
+      "tools_utilizadas": [],
+      "modelo_utilizado": null
+    },
+    {
+      "posicao": 10,
+      "cliente_id": "CLI-030",
+      "sinais_regra_1": 0,
+      "sinais_regra_2": 1,
+      "total_sinalizacoes": 1,
+      "risco_esperado_regras": "médio",
+      "status_lote": null,
+      "status_llm": "indisponivel_para_confronto",
+      "status_validacao_factual": null,
+      "risco_llm": null,
+      "comparavel": false,
+      "concordancia": null,
+      "motivo_nao_comparavel": "Sem registro persistido no lote; LLM indisponível para confronto.",
+      "tools_utilizadas": [],
+      "modelo_utilizado": null
+    }
+  ],
+  "metricas_parciais": {
+    "casos_comparaveis": 2,
+    "concordancias": 0,
+    "divergencias": 2,
+    "taxa_concordancia": 0.0,
+    "distribuicao_divergencias": {
+      "regras alto × LLM médio": 2
+    },
+    "aviso": "A taxa de concordância atual é parcial e não representa os 10 clientes do ranking."
+  },
+  "divergencias": [
+    {
+      "cliente_id": "CLI-014",
+      "fatos_deterministicos": {
+        "sinais_regra_1": 0,
+        "sinais_regra_2": 3,
+        "total_sinalizacoes": 3
+      },
+      "risco_esperado_criterio_sintetico": "alto",
+      "risco_retornado_agente": "médio",
+      "tools_realmente_consultadas": [
+        "historico_cliente",
+        "perfil_canal",
+        "operacoes_do_dia"
+      ],
+      "interpretacao_possivel": "O critério sintético converte a quantidade de sinalizações em risco, enquanto o agente retornou outro nível após consultar as tools registradas. Isso é uma interpretação do contraste entre os dois métodos, não um fato adicional.",
+      "conclusao": "Não há evidência suficiente para determinar qual avaliação é mais adequada neste caso."
+    },
+    {
+      "cliente_id": "CLI-028",
+      "fatos_deterministicos": {
+        "sinais_regra_1": 0,
+        "sinais_regra_2": 2,
+        "total_sinalizacoes": 2
+      },
+      "risco_esperado_criterio_sintetico": "alto",
+      "risco_retornado_agente": "médio",
+      "tools_realmente_consultadas": [
+        "historico_cliente",
+        "operacoes_do_dia",
+        "perfil_canal"
+      ],
+      "interpretacao_possivel": "O critério sintético converte a quantidade de sinalizações em risco, enquanto o agente retornou outro nível após consultar as tools registradas. Isso é uma interpretação do contraste entre os dois métodos, não um fato adicional.",
+      "conclusao": "Não há evidência suficiente para determinar qual avaliação é mais adequada neste caso."
+    }
+  ],
+  "limitacoes": [
+    "O confronto usa um critério sintético e não mede risco real de PLD.",
+    "Somente casos com sucesso e sem alertas factuais entram no denominador.",
+    "Resultados ausentes, alertas factuais e erros técnicos não equivalem a risco baixo.",
+    "O JSON do lote persiste nomes de tools, mas não as respostas brutas delas; detalhes não são reconstruídos.",
+    "A taxa de concordância atual é parcial e não representa os 10 clientes do ranking."
+  ]
+}
