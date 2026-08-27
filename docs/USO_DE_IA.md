@@ -445,24 +445,25 @@ Isso foi importante porque a entrevista técnica pode exigir explicação das de
 
 ---
 
-# 10. Seção reservada — eventual mudança de API/provedor
+# 10. Avaliação de contingência — Groq
 
-> Atualizar somente se uma mudança real ocorrer.
+## Finalidade
 
-Se o projeto passar a usar outro provedor, registrar:
+O Groq foi efetivamente testado durante o desenvolvimento como alternativa de contingência aos problemas observados no Gemini: latência elevada em algumas execuções, erros `503`, retries e interrupção parcial do lote por quota `429`.
 
-- provedor/modelo testado;
-- motivo do teste;
-- motivo da mudança;
-- teste mínimo realizado;
-- resultado do teste;
-- compatibilidade com tools;
-- compatibilidade com saída estruturada;
-- comportamento factual;
-- latência;
-- tokens;
-- alterações necessárias;
-- outputs gerados;
-- como os resultados foram separados dos modelos anteriores.
+O modelo avaliado foi `openai/gpt-oss-20b`. O objetivo não foi substituir automaticamente o provedor, mas verificar de forma controlada a viabilidade de chat, tool calling e integração com o agente.
 
-Até esta versão, foram testados modelos Gemini diferentes. Outras opções, como Groq, OpenRouter e Ollama, foram discutidas apenas como possibilidades de continuidade e não devem ser descritas como utilizadas enquanto isso não acontecer.
+## Testes realizados
+
+- **Chat mínimo:** autenticação concluída, modelo disponível e resposta `OK`; latência aproximada de 0,398 s, 76 tokens de entrada, 36 de saída, 112 no total e 26 `reasoning_tokens`. O SDK não forneceu custo por chamada.
+- **Tool calling sintético:** a tool temporária `consultar_saldo(cliente_id)` foi escolhida pelo modelo para `CLI-TESTE`, validada e executada localmente; o resultado retornou ao modelo e a resposta final foi correta. O fluxo usou duas chamadas, 462 tokens e cerca de 0,823 s de latência agregada. Uma falha inicial de codificação do terminal Windows foi local, não do provedor; o reteste UTF-8 passou.
+- **Agente com `CLI-014`:** o modelo consultou `historico_cliente` e `perfil_canal`, mas apresentou `percentual_uso` como percentual de volume financeiro. A revisão humana rejeitou essa extrapolação, pois o campo se refere apenas à quantidade de operações.
+- **Reteste com `CLI-014`:** após reforço factual, houve erro `400` de validação de tool devido ao nome contaminado `perfil_canal<|channel|>commentary`. Não houve parecer final.
+
+## Supervisão e decisão humana
+
+Nenhuma saída do Groq foi usada para preencher dados fictícios, completar resultados ausentes ou substituir evidências determinísticas. Respostas inconsistentes foram rejeitadas, e as correções — inclusive a regra de que cálculos quantitativos pertencem ao código/Pandas — foram decisões humanas.
+
+O experimento gerou melhorias genéricas preservadas no caminho Gemini: observabilidade por chamada, tratamento de retries/erros, reforço contra cálculos derivados pela LLM e validação específica para impedir que `percentual_uso` seja apresentado como percentual de volume.
+
+Apesar da boa latência e do tool calling funcional em testes controlados, o Groq não foi promovido ao caminho final por risco factual, instabilidade do fluxo real e risco de regressão no prazo do desafio. O código específico, a dependência, a configuração de exemplo e os outputs temporários foram removidos antes da entrega. Gemini permanece como provedor executável principal.

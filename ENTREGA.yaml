@@ -1,10 +1,8 @@
 # Autodeclaração da entrega.
-# Atualizar os campos marcados como PREENCHER antes do envio final.
-
-candidato: "PREENCHER NOME"
+candidato: "Daniel Gratão Silva"
 modelo_usado: "gemini-3.6-flash (lote atual); gemini-3.7-flash (testes anteriores)"
 provedor: "google-ai-studio"
-horas_dedicadas: "PREENCHER"
+horas_dedicadas: "12"
 
 nivel_1:
   limpeza_dados:
@@ -46,7 +44,7 @@ nivel_2:
   agente:
     status: completo
     onde: "nivel_2/agente.py"
-    nota: "Function calling com escolha contextual das tools, execução local, validação estruturada e checagem factual parcial."
+    nota: "Function calling com escolha contextual das tools, execução local, validação estruturada, métricas por chamada e checagem factual parcial."
 
   lote:
     status: parcial
@@ -61,12 +59,11 @@ nivel_2:
 nivel_3:
   trilha_escolhida: null
   status: nao_feito
-  plano: "A prioridade foi consolidar os Níveis 1 e 2. Com mais tempo, uma trilha seria escolhida apenas após completar o lote, melhorar a observabilidade e validar a continuidade de provedor descrita em docs/DECISOES.md."
+  plano: "Não implementado nesta entrega."
 
 observacoes:
   - "O Nível 2 não é declarado totalmente completo porque a execução do Top 10 foi interrompida por quota 429."
   - "O custo monetário não foi fornecido pelo SDK e não foi estimado."
-  - "A latência atual está registrada principalmente por análise; o detalhamento por chamada individual ainda precisa ser melhorado."
+  - "Latência, tokens, retries e erros por chamada são registrados quando disponibilizados pelo SDK; custo monetário permanece indisponível quando não fornecido."
   - "Resultados de modelos diferentes foram mantidos separados."
-  - "Antes da entrega final, revisar o notebook do Nível 1 e confirmar que a versão final executada está commitada."
-  - "Caso haja troca efetiva de API/provedor antes da entrega, atualizar modelo_usado, provedor, README.md, ENTREGA.yaml, docs/DECISOES.md e docs/USO_DE_IA.md."
+  - "Groq foi avaliado como contingência, mas não foi promovido ao caminho final; Gemini permanece como provedor/modelo declarado nesta entrega."

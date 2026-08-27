@@ -1,8 +1,7 @@
 # DECISOES.md
 
-> Documento vivo do desafio técnico de Estágio em Engenharia de Inteligência Artificial — Itaú Unibanco.  
-> Esta versão consolida as decisões, trade-offs, limitações e próximos passos observados até o estado atual do projeto.  
-> Deve ser atualizada caso haja mudança efetiva de modelo/provedor, conclusão do lote restante ou alteração metodológica relevante.
+> Registro final do desafio técnico de Estágio em Engenharia de Inteligência Artificial — Itaú Unibanco.
+> Consolida as decisões, trade-offs, limitações e o estado efetivamente entregue no projeto.
 
 ---
 
@@ -1013,61 +1012,13 @@ Nenhum parecer fictício é gerado.
 
 ---
 
-## 22.2 Plano de continuidade com mais tempo
-
-### Backoff
-
-Adicionar espera progressiva entre novas tentativas.
-
-### Circuit breaker
-
-Após uma quantidade configurada de falhas, suspender temporariamente novas chamadas ao provedor.
-
-### Fila de pendentes
-
-Manter casos não analisados para processamento posterior.
-
-### Cache de respostas válidas
-
-Não repetir chamadas para o mesmo estado de dados.
-
-### Camada de abstração de provedor
-
-Separar a lógica do agente do SDK específico.
-
-### Provedor/modelo alternativo
-
-Avaliar empiricamente alternativas permitidas pelo desafio, como:
-
-- Groq;
-- OpenRouter;
-- Ollama local.
-
-Não há fundamento nesta versão para afirmar que qualquer alternativa é automaticamente superior ou mais estável.
-
-### Modelo local
-
-Ollama poderia ser estudado como rota de contingência sem quota externa, desde que fossem validados:
-
-- qualidade;
-- latência;
-- hardware;
-- structured output;
-- tools/function calling.
-
-### Revisão humana
-
-Se a LLM estiver fora do ar e o caso precisar de tratamento imediato, encaminhar diretamente as flags e fatos determinísticos para análise humana.
-
----
-
 # 23. Limitações atuais
 
 1. O lote não foi concluído para os 10 clientes devido à quota 429.
 2. O confronto possui apenas dois casos comparáveis.
-3. A validação factual automática cobre datas e valores, não semântica completa.
+3. A validação factual automática cobre datas, valores e o caso específico de `percentual_uso` apresentado como volume, mas não semântica completa.
 4. O custo monetário não foi disponibilizado.
-5. A latência ainda precisa ser registrada por chamada individual para aderir integralmente ao enunciado.
+5. Latência e tokens por chamada são registrados quando disponibilizados pelo SDK; a cobertura de observabilidade ainda depende das informações expostas pelo provedor.
 6. Serviços externos introduzem indisponibilidade e quota.
 7. O critério de confronto é sintético.
 8. Os dados e regras do desafio não representam política real do Itaú.
@@ -1076,45 +1027,36 @@ Se a LLM estiver fora do ar e o caso precisar de tratamento imediato, encaminhar
 
 ---
 
-# 24. O que faria com mais tempo
+# 24. Avaliação de provedor alternativo — Groq
 
-1. completar o lote dos 10 clientes com um único modelo/provedor final;
-2. recalcular o confronto com todos os casos válidos;
-3. registrar métricas por chamada da API;
-4. criar camada de abstração para modelo/provedor;
-5. testar empiricamente Groq, OpenRouter e/ou Ollama;
-6. implementar backoff exponencial;
-7. implementar circuit breaker formal;
-8. ampliar testes de pipeline, tools e agente com mocks;
-9. fortalecer validação factual;
-10. monitorar disponibilidade, latência e taxa de erros;
-11. testar cache;
-12. testar processamento incremental quando novos dados chegarem;
-13. definir critérios objetivos para troca e retorno entre provedor principal e contingência;
-14. validar a solução em um volume maior e mais próximo de produção.
+## Decisão
 
----
+O Gemini permaneceu como provedor principal do caminho executável final. O Groq foi avaliado como contingência diante de latência elevada em algumas execuções Gemini, erros `503`, retries e da interrupção parcial do lote por `429`.
 
-# 25. Seção reservada — eventual troca de API/provedor
+A avaliação foi técnica e controlada; não constituiu migração de provedor nem produziu resultados incorporados ao lote final.
 
-> Esta seção deve ser atualizada somente se a troca realmente acontecer.
+## Sequência de testes
 
-Registrar:
+1. **Chat mínimo** com `openai/gpt-oss-20b`: autenticação e modelo disponível, resposta `OK`, latência aproximada de 0,398 s, 76 tokens de entrada, 36 de saída e 112 no total. O SDK informou 26 `reasoning_tokens`, mas não forneceu custo por chamada.
+2. **Tool calling sintético** com a tool temporária `consultar_saldo(cliente_id)`: o modelo escolheu a tool, recebeu o resultado local controlado para `CLI-TESTE` e devolveu resposta final correta. Foram duas chamadas, cerca de 0,823 s de latência agregada e 462 tokens, sem erro do provedor. Uma primeira tentativa falhou apenas na codificação local do terminal Windows (`cp1252` versus Unicode); o reteste com saída UTF-8 passou e essa ocorrência não foi tratada como falha do Groq.
+3. **Agente com caso real `CLI-014`**: o modelo escolheu `historico_cliente` e `perfil_canal`. O fluxo técnico chegou ao parecer estruturado, mas houve uma extrapolação factual: `percentual_uso = 36,36%` foi apresentado também como percentual de volume financeiro, embora a evidência correspondesse apenas à quantidade de operações. Pydantic e o controle factual então existente não detectaram essa relação semântica; a inconsistência foi identificada em revisão humana.
+4. **Reteste real**: após o reforço factual, a primeira chamada consultou `historico_cliente`. A chamada seguinte recebeu erro `400` porque o nome de tool retornado foi contaminado por marcador interno (`perfil_canal<|channel|>commentary`), não correspondendo a uma tool declarada. Não houve parecer final nesse reteste.
 
-- provedor/modelo anterior;
-- provedor/modelo novo;
-- motivo objetivo;
-- erro/limitação que motivou a avaliação;
-- teste mínimo de disponibilidade;
-- teste do fluxo agentic;
-- compatibilidade com tools;
-- compatibilidade com structured output;
-- alterações de código;
-- impacto em tokens;
-- impacto em latência;
-- impacto em factualidade;
-- outputs produzidos;
-- regra de separação entre lotes;
-- critério usado para considerar a migração válida.
+## Melhoria preservada
 
-Até o estado atual documentado aqui, houve testes com modelos Gemini diferentes, mas não foi registrada uma migração definitiva para outro provedor externo.
+A experiência motivou melhorias independentes de provedor e mantidas no caminho Gemini:
+
+- cálculos quantitativos permanecem responsabilidade de Pandas/Python;
+- a LLM não deve criar percentuais, proporções, médias, somas ou relações quantitativas derivadas;
+- `percentual_uso` é explicitamente definido como participação na quantidade de operações, não no volume financeiro;
+- a validação factual alerta quando esse percentual é apresentado como percentual de volume;
+- testes locais cobrem os casos permitidos e a extrapolação proibida;
+- latência, tokens, retries e erros por chamada de API permanecem observáveis quando disponíveis.
+
+## Trade-off e decisão final
+
+O Groq apresentou latência inferior aos testes Gemini e passou os testes mínimo e sintético de tool calling. Ainda assim, a falha factual semântica e o erro `400` de validação de tool no reteste real indicaram risco de estabilidade e regressão dentro do prazo do desafio.
+
+A decisão de engenharia foi **não promover Groq ao caminho principal**. Ela considera estabilidade, factualidade, risco de regressão, tempo restante e a necessidade de preservar uma entrega funcional e auditável. Isso não significa que o Groq “não funciona”; significa que ele foi avaliado como contingência, mas não atingiu estabilidade suficiente para substituir Gemini nesta entrega.
+
+O código, a dependência, a chave de exemplo e os outputs diagnósticos específicos do Groq foram removidos antes da entrega final. O registro documental foi preservado para manter transparência e rastreabilidade.

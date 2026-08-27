@@ -122,7 +122,7 @@ O Nível 1 concentra:
 - cálculos ficam em Pandas/Python;
 - interpretação fica na LLM.
 
-O notebook do Nível 1 deve ser entregue com as células e saídas executadas, conforme exigido pelo enunciado.
+O notebook do Nível 1 está executado e preserva as células e saídas exigidas pelo enunciado.
 
 ---
 
@@ -270,6 +270,11 @@ Resultados de modelos diferentes foram mantidos separados para preservar rastrea
 
 Não foi contratado plano pago para contornar as limitações.
 
+
+## Avaliação de contingência
+
+Durante o desenvolvimento, o Groq com `openai/gpt-oss-20b` foi avaliado como contingência para disponibilidade e latência observadas no Gemini. Embora tenha apresentado boa latência e tool calling funcional em testes controlados, uma inconsistência factual semântica e uma falha de validação de tool em execução real levaram à decisão de manter Gemini como caminho final estável. Os detalhes estão em `docs/DECISOES.md` e `docs/USO_DE_IA.md`.
+
 ---
 
 # Outputs
@@ -299,9 +304,7 @@ Quando disponíveis, são registrados:
 
 ## Limitação atual
 
-A latência está registrada principalmente por análise completa do cliente.
-
-O enunciado solicita custo e latência de cada chamada individual da API; portanto, o detalhamento por chamada ainda é uma melhoria necessária.
+Latência, tokens, retries e erros são registrados por chamada individual quando disponibilizados pelo SDK, além das métricas agregadas por análise.
 
 O custo monetário não foi disponibilizado diretamente pelo SDK utilizado e não foi estimado.
 
@@ -346,7 +349,7 @@ Implementação realizada, incluindo:
 - LLM estruturada;
 - comparação entre prompts.
 
-Antes da entrega final, o notebook deve ser conferido para garantir que a versão final esteja executada e commitada com suas saídas.
+O notebook do Nível 1 foi concluído com suas saídas preservadas.
 
 ## Nível 2
 
@@ -373,8 +376,8 @@ A prioridade foi entregar os Níveis 1 e 2 de forma sólida e documentar com tra
 
 - lote do Top 10 ainda não concluído;
 - confronto baseado atualmente em apenas dois casos comparáveis;
-- validação factual automática é parcial;
-- observabilidade de latência ainda precisa ser detalhada por chamada;
+- validação factual automática é parcial, embora cubra datas, valores e o uso indevido de `percentual_uso` como volume;
+- observabilidade por chamada depende das métricas disponibilizadas pelo SDK;
 - custo monetário não foi retornado pelo SDK;
 - dependência de API externa introduziu indisponibilidade e quota.
 
