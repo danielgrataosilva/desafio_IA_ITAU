@@ -953,17 +953,13 @@ Foram registrados, quando disponíveis:
 - tools utilizadas;
 - alerta factual.
 
-## Limitação atual
+## Estado atual e limitação
 
-A auditoria identificou que a latência está consolidada principalmente por análise do cliente, enquanto o enunciado pede custo e latência de cada chamada.
+`metricas.chamadas_api` já está implementado para novas execuções. Cada tentativa realmente enviada ao provedor registra, quando disponibilizados pelo SDK, latência, tokens, retries e erros por chamada. As métricas agregadas por análise de cliente continuam preservadas.
 
-O custo monetário não é fornecido diretamente pelo SDK utilizado.
+Os quatro registros históricos do lote foram gerados antes dessa melhoria e, por isso, não contêm métricas detalhadas por chamada. Esses dados não foram reconstruídos, estimados ou atribuídos retroativamente.
 
-Logo:
-
-- custo: indisponível e não estimado;
-- latência por análise: disponível;
-- latência detalhada por chamada: melhoria ainda necessária.
+O custo monetário não é fornecido diretamente pelo SDK utilizado e permanece indisponível, sem estimativa.
 
 ---
 
