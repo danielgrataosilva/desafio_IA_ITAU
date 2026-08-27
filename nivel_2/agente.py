@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import time
 from pathlib import Path
 from typing import Literal
@@ -130,17 +131,89 @@ Ao terminar as consultas necess\u00e1rias, aguarde a solicita\u00e7\u00e3o de pa
 
 def _prompt_final(contexto, tools_utilizadas, limite_atingido):
     observacao_limite = (
-        'O limite de chamadas de tools foi atingido; use somente o contexto j\u00e1 dispon\u00edvel. '
+        'O limite de chamadas de tools foi atingido; use somente o contexto já disponível. '
         if limite_atingido
         else ''
     )
     return f"""Produza agora o parecer final estruturado para o cliente {contexto['cliente_id']}.
 
-{observacao_limite}Use somente fatos presentes no contexto inicial e nas respostas das tools. N\u00e3o recalcule valores, n\u00e3o invente informa\u00e7\u00f5es e n\u00e3o atribua inten\u00e7\u00e3o, motiva\u00e7\u00e3o, legisla\u00e7\u00e3o ou regulamenta\u00e7\u00e3o. Linguagem interpretativa deve ser condicional, por exemplo 'pode ser compat\u00edvel com' ou 'merece an\u00e1lise'. Declare que se trata de apoio \u00e0 triagem humana, n\u00e3o de conclus\u00e3o definitiva.
+{observacao_limite}As únicas evidências permitidas são o contexto inicial e as respostas das tools já presentes nesta conversa. Cada fato específico citado precisa estar diretamente nessas evidências: valores, datas, canais, identificadores de operação, contrapartes, quantidades e flags. Não complete lacunas por inferência, memória ou conhecimento externo.
+
+Se uma data foi consultada sem os detalhes de outras datas, não cite valores, canais, contrapartes ou operações dessas outras datas. Se um detalhe relevante não foi consultado, declare que ele não foi consultado ou que não há evidência suficiente, em vez de estimá-lo. Não recalcule valores, não invente informações e não atribua intenção, motivação, legislação ou regulamentação. Linguagem interpretativa deve ser condicional, por exemplo 'pode ser compatível com' ou 'merece análise'. Declare que se trata de apoio à triagem humana, não de conclusão definitiva.
 
 As tools efetivamente usadas foram: {json.dumps(tools_utilizadas, ensure_ascii=False)}.
 Retorne exatamente os campos do schema solicitado, incluindo essa mesma lista em `tools_utilizadas`.
 """
+
+
+PADRAO_DATA_ISO = re.compile(r'\b\d{4}-\d{2}-\d{2}\b')
+PADRAO_VALOR_MONETARIO = re.compile(r'R\$\s*([0-9][0-9.\s]*(?:,[0-9]{1,2})?)')
+
+
+def _normalizar_valor_monetario(texto):
+    """Normaliza formatos brasileiros e decimais para uma comparação simples."""
+    texto = str(texto).replace(' ', '')
+    if ',' in texto:
+        texto = texto.replace('.', '').replace(',', '.')
+    try:
+        return round(float(texto), 2)
+    except ValueError:
+        return None
+
+
+def _coletar_evidencias_especificas(valor, datas, valores):
+    """Coleta datas ISO e valores numéricos presentes nas evidências consultadas."""
+    if isinstance(valor, dict):
+        for item in valor.values():
+            _coletar_evidencias_especificas(item, datas, valores)
+    elif isinstance(valor, list):
+        for item in valor:
+            _coletar_evidencias_especificas(item, datas, valores)
+    elif isinstance(valor, str):
+        datas.update(PADRAO_DATA_ISO.findall(valor))
+    elif isinstance(valor, (int, float)) and not isinstance(valor, bool):
+        valores.add(round(float(valor), 2))
+
+
+def _validar_rastreabilidade_basica(contexto, tools_chamadas, parecer):
+    """Sinaliza datas e valores monetários citados sem evidência consultada.
+
+    A checagem é deliberadamente limitada: ela não valida semântica, canais ou
+    contrapartes. Sem alerta automático não equivale a comprovação factual; a
+    revisão humana continua necessária.
+    """
+    datas_evidencia, valores_evidencia = set(), set()
+    _coletar_evidencias_especificas(contexto, datas_evidencia, valores_evidencia)
+    for chamada in tools_chamadas:
+        if chamada.get('executada'):
+            _coletar_evidencias_especificas(
+                chamada.get('resultado'), datas_evidencia, valores_evidencia
+            )
+
+    texto_parecer = json.dumps(parecer, ensure_ascii=False)
+    datas_sem_evidencia = sorted(set(PADRAO_DATA_ISO.findall(texto_parecer)) - datas_evidencia)
+    valores_citados = {
+        valor
+        for item in PADRAO_VALOR_MONETARIO.finditer(texto_parecer)
+        if (valor := _normalizar_valor_monetario(item.group(1))) is not None
+    }
+    valores_sem_evidencia = sorted(valores_citados - valores_evidencia)
+    alertas = []
+    if datas_sem_evidencia:
+        alertas.append(f'Datas sem evidência consultada: {datas_sem_evidencia}.')
+    if valores_sem_evidencia:
+        alertas.append(
+            f'Valores monetários sem evidência consultada: '
+            f'{[f"R$ {valor:,.2f}" for valor in valores_sem_evidencia]}.'
+        )
+    return {
+        'status': 'com_alertas' if alertas else 'sem_alertas_automaticos',
+        'alertas': alertas,
+        'limitacao': (
+            'A checagem cobre apenas datas ISO e valores monetários; revisão humana '
+            'permanece necessária para canais, contrapartes e demais alegações.'
+        ),
+    }
 
 
 def _validar_argumentos(nome, argumentos, cliente_id):
@@ -236,10 +309,12 @@ def analisar_cliente(cliente_id):
     }
     resultado = {
         'status_final': 'nao_executado',
+        'modelo_utilizado': None,
         'contexto_inicial': contexto,
         'tools_chamadas': [],
         'quantidade_chamadas_tools': 0,
         'parecer': None,
+        'validacao_factual': None,
         'metricas': None,
         'erro_api': None,
         'quantidade_retries': 0,
@@ -253,6 +328,7 @@ def analisar_cliente(cliente_id):
         return resultado
 
     chave_api, modelo = _carregar_configuracao()
+    resultado['modelo_utilizado'] = modelo
     if not chave_api or not modelo:
         resultado['status_final'] = 'configuracao_ausente'
         resultado['erro_api'] = 'GEMINI_API_KEY ou GEMINI_MODEL n\u00e3o configurados.'
@@ -349,13 +425,23 @@ def analisar_cliente(cliente_id):
 
     _acumular_uso(metricas, resposta_final)
     try:
+        # Pydantic valida estrutura, tipos e enum; não comprova que o texto é factual.
         parecer = ParecerAgente.model_validate_json(resposta_final.text)
         if parecer.cliente_id != cliente_id:
             raise ValueError('cliente_id do parecer difere do cliente analisado.')
         if parecer.tools_utilizadas != nomes_tools:
             parecer = parecer.model_copy(update={'tools_utilizadas': nomes_tools})
         resultado['parecer'] = parecer.model_dump()
-        resultado['status_final'] = 'sucesso'
+        resultado['validacao_factual'] = _validar_rastreabilidade_basica(
+            contexto,
+            resultado['tools_chamadas'],
+            resultado['parecer'],
+        )
+        if resultado['validacao_factual']['alertas']:
+            resultado['status_final'] = 'resposta_com_alertas_factualidade'
+            resultado['erro_api'] = 'Parecer estruturado com citações sem evidência consultada.'
+        else:
+            resultado['status_final'] = 'sucesso'
     except (ValidationError, ValueError) as erro:
         resultado['status_final'] = 'resposta_invalida'
         resultado['erro_api'] = str(erro)

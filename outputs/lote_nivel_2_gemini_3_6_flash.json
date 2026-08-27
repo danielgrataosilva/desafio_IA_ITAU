@@ -1,0 +1,140 @@
+{
+  "versao": 1,
+  "atualizado_em_utc": "2026-08-27T13:18:08.729395+00:00",
+  "resultados": [
+    {
+      "posicao": 1,
+      "cliente_id": "CLI-014",
+      "sinais_regra_1": 0,
+      "sinais_regra_2": 3,
+      "total_sinalizacoes": 3,
+      "volume_total_brl": 80629.99,
+      "status": "sucesso",
+      "modelo_utilizado": "gemini-3.6-flash",
+      "status_validacao_factual": "sem_alertas_automaticos",
+      "alertas_factualidade": [],
+      "limitacao_validacao_factual": "A checagem cobre apenas datas ISO e valores monetários; revisão humana permanece necessária para canais, contrapartes e demais alegações.",
+      "nivel_risco": "médio",
+      "tipologia_suspeita": "Operação com valor atípico",
+      "red_flags": [
+        "Presença de 3 sinais de regra 2 e 3 operações atípicas nas datas 2026-03-05, 2026-03-06 e 2026-03-24",
+        "Operação OP-00129 em 2026-03-05 no valor de R$ 13.660,65 com flag_valor_atipico ativado, significativamente acima da mediana de R$ 2.308,41 do cliente"
+      ],
+      "justificativa": "Este documento atua como apoio à triagem humana e não representa uma conclusão definitiva sobre lavagem de dinheiro. O cliente CLI-014 registrou 11 operações entre 2026-03-01 e 2026-05-26, movimentando um volume total de R$ 80.629,99, com mediana de R$ 2.308,41 e 0 eventos de fracionamento. Foram identificadas 3 operações atípicas (nas datas 2026-03-05, 2026-03-06 e 2026-03-24) e 3 sinais de regra 2. No detalhamento do dia 2026-03-05, constatou-se a operação OP-00129, uma transferência recebida via Pix no valor de R$ 13.660,65, oriunda de Alfa Assessoria LTDA, marcada com flag_valor_atipico=true. Os detalhes específicos das operações de 2026-03-06 e 2026-03-24 não constam nas evidências fornecidas. Quanto aos canais, o Pix é o mais utilizado e de maior volume (36,36% das operações; R$ 39.731,21). Tais indícios justificam a análise do contexto transacional pela equipe de triagem.",
+      "recomendacao_analista": "Recomenda-se à triagem humana solicitar comprovação documental da origem dos recursos referentes à operação OP-00129 e obter os detalhes das operações dos dias 2026-03-06 e 2026-03-24.",
+      "tools_utilizadas": [
+        "historico_cliente",
+        "perfil_canal",
+        "operacoes_do_dia"
+      ],
+      "quantidade_chamadas_tools": 3,
+      "tokens_entrada": 3456,
+      "tokens_saida": 747,
+      "tokens_pensamento": 2687,
+      "tokens_totais": 6890,
+      "latencia_segundos": 104.584,
+      "retries": 1,
+      "erro_final": null
+    },
+    {
+      "posicao": 2,
+      "cliente_id": "CLI-023",
+      "sinais_regra_1": 0,
+      "sinais_regra_2": 2,
+      "total_sinalizacoes": 2,
+      "volume_total_brl": 148535.016,
+      "status": "erro",
+      "modelo_utilizado": "gemini-3.6-flash",
+      "status_validacao_factual": "com_alertas",
+      "alertas_factualidade": [
+        "Valores monetários sem evidência consultada: ['R$ 65,417.16', 'R$ 148,535.01']."
+      ],
+      "limitacao_validacao_factual": "A checagem cobre apenas datas ISO e valores monetários; revisão humana permanece necessária para canais, contrapartes e demais alegações.",
+      "nivel_risco": "médio",
+      "tipologia_suspeita": "Operações de valor atípico em espécie e moeda estrangeira",
+      "red_flags": [
+        "Depósito em espécie atípico de R$ 41.768,17 na operação OP-00219 em 2026-04-28 com contraparte Rubi Importacao ME",
+        "Transferência enviada por TED atípica no valor de USD 12.114,29 (R$ 65.417,166) na operação OP-00317 em 2026-05-01 com contraparte Estrela Transportes LTDA",
+        "Volume das duas operações atípicas significativamente superior à mediana do cliente (R$ 3.241,16)"
+      ],
+      "justificativa": "Este parecer atua exclusivamente como apoio à triagem humana e não conclui de forma definitiva a ocorrência de lavagem de dinheiro. O cliente CLI-023 apresentou 12 operações registradas entre 2026-03-06 e 2026-05-19, totalizando volume de R$ 148.535,016 com mediana de R$ 3.241,16. Foram detectadas 2 operações com flag de valor atípico (regra 2): a OP-00219 em 2026-04-28, consistindo em depósito em espécie no valor de R$ 41.768,17 envolvendo Rubi Importacao ME; e a OP-00317 em 2026-05-01, referente a transferência enviada via TED no valor de USD 12.114,29 (equivalente a R$ 65.417,166) envolvendo Estrela Transportes LTDA. Não foram identificados eventos de fracionamento (regra 1). As movimentações podem ser atípicas em relação ao padrão observado e merecem verificação adicional pela triagem humana.",
+      "recomendacao_analista": "Recomenda-se a análise humana da fundamentação econômica e da documentação suporte das operações atípicas identificadas.",
+      "tools_utilizadas": [
+        "historico_cliente",
+        "operacoes_do_dia",
+        "operacoes_do_dia"
+      ],
+      "quantidade_chamadas_tools": 3,
+      "tokens_entrada": 3235,
+      "tokens_saida": 653,
+      "tokens_pensamento": 2369,
+      "tokens_totais": 6257,
+      "latencia_segundos": 214.172,
+      "retries": 1,
+      "erro_final": "Parecer estruturado com citações sem evidência consultada."
+    },
+    {
+      "posicao": 3,
+      "cliente_id": "CLI-028",
+      "sinais_regra_1": 0,
+      "sinais_regra_2": 2,
+      "total_sinalizacoes": 2,
+      "volume_total_brl": 88750.8,
+      "status": "sucesso",
+      "modelo_utilizado": "gemini-3.6-flash",
+      "status_validacao_factual": "sem_alertas_automaticos",
+      "alertas_factualidade": [],
+      "limitacao_validacao_factual": "A checagem cobre apenas datas ISO e valores monetários; revisão humana permanece necessária para canais, contrapartes e demais alegações.",
+      "nivel_risco": "médio",
+      "tipologia_suspeita": "Movimentação atípica de entrada e saída via TED com valores distantes da mediana habitual",
+      "red_flags": [
+        "Presença de 2 sinalizações da regra 2 relativas a valor atípico.",
+        "Operações atípicas OP-00307 (R$ 24.875,39 recebidos de Estrela Assessoria LTDA) e OP-00308 (R$ 27.715,48 enviados para Delta Trading LTDA) na mesma data (2026-03-21), ambas via TED.",
+        "Valores das transações sinalizadas em 2026-03-21 significativamente maiores do que a mediana histórica do cliente (R$ 4.430,25).",
+        "Canal TED concentra o maior volume financeiro (R$ 61.733,80 em 5 operações de um total de 12)."
+      ],
+      "justificativa": "Este relatório visa apoiar a triagem humana e não conclui definitivamente sobre lavagem de dinheiro. O cliente CLI-028 possui 12 operações registradas entre 2026-03-03 e 2026-05-23, somando R$ 88.750,80 em volume total, com mediana de R$ 4.430,25. Na data consultada de 2026-03-21, foram identificadas 2 operações atípicas via TED: a entrada OP-00307 de R$ 24.875,39 oriunda de Estrela Assessoria LTDA e a saída OP-00308 de R$ 27.715,48 destinada a Delta Trading LTDA. Ambas possuem flag_valor_atipico como verdadeiro e flag_fracionamento como falso. O perfil de canal aponta a TED como o canal mais utilizado (41,67%, 5 operações) e de maior volume (R$ 61.733,80). A ocorrência de crédito e débito de alto valor no mesmo dia pode indicar padrão atípico de movimentação financeira que merece análise detida pela equipe humana.",
+      "recomendacao_analista": "Recomenda-se submeter o caso à triagem humana para verificação da fundamentação econômica e da relação do cliente com as contrapartes Estrela Assessoria LTDA e Delta Trading LTDA nas operações de 2026-03-21.",
+      "tools_utilizadas": [
+        "historico_cliente",
+        "operacoes_do_dia",
+        "perfil_canal"
+      ],
+      "quantidade_chamadas_tools": 3,
+      "tokens_entrada": 3095,
+      "tokens_saida": 685,
+      "tokens_pensamento": 1771,
+      "tokens_totais": 5551,
+      "latencia_segundos": 82.758,
+      "retries": 1,
+      "erro_final": null
+    },
+    {
+      "posicao": 4,
+      "cliente_id": "CLI-013",
+      "sinais_regra_1": 0,
+      "sinais_regra_2": 2,
+      "total_sinalizacoes": 2,
+      "volume_total_brl": 81730.99,
+      "status": "erro",
+      "modelo_utilizado": "gemini-3.6-flash",
+      "status_validacao_factual": null,
+      "alertas_factualidade": [],
+      "limitacao_validacao_factual": null,
+      "nivel_risco": null,
+      "tipologia_suspeita": null,
+      "red_flags": [],
+      "justificativa": null,
+      "recomendacao_analista": null,
+      "tools_utilizadas": [],
+      "quantidade_chamadas_tools": 3,
+      "tokens_entrada": 1504,
+      "tokens_saida": 86,
+      "tokens_pensamento": 473,
+      "tokens_totais": 2063,
+      "latencia_segundos": 74.239,
+      "retries": 2,
+      "erro_final": "429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.6-flash\\nPlease retry in 919.760912ms.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'model': 'gemini-3.6-flash', 'location': 'global'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '0s'}]}}"
+    }
+  ]
+}

@@ -87,17 +87,27 @@ def _contem_codigo(erro, codigo):
 def _montar_registro(cliente_ranking, analise):
     parecer = analise.get('parecer') or {}
     metricas = analise.get('metricas') or {}
+    validacao_factual = analise.get('validacao_factual') or {}
     status_agente = analise.get('status_final')
     sucesso = status_agente == 'sucesso' and parecer.get('nivel_risco') in NIVEIS_RISCO_VALIDOS
+    tools_executadas = [
+        chamada.get('nome')
+        for chamada in analise.get('tools_chamadas', [])
+        if chamada.get('executada')
+    ]
     return {
         **cliente_ranking,
         'status': 'sucesso' if sucesso else 'erro',
+        'modelo_utilizado': analise.get('modelo_utilizado'),
+        'status_validacao_factual': validacao_factual.get('status'),
+        'alertas_factualidade': validacao_factual.get('alertas', []),
+        'limitacao_validacao_factual': validacao_factual.get('limitacao'),
         'nivel_risco': parecer.get('nivel_risco'),
         'tipologia_suspeita': parecer.get('tipologia_suspeita'),
         'red_flags': parecer.get('red_flags', []),
         'justificativa': parecer.get('justificativa'),
         'recomendacao_analista': parecer.get('recomendacao_analista'),
-        'tools_utilizadas': parecer.get('tools_utilizadas', []),
+        'tools_utilizadas': parecer.get('tools_utilizadas', tools_executadas),
         'quantidade_chamadas_tools': analise.get('quantidade_chamadas_tools', 0),
         'tokens_entrada': metricas.get('tokens_entrada'),
         'tokens_saida': metricas.get('tokens_saida'),
@@ -193,6 +203,11 @@ def calcular_metricas(resultados):
 
     tabela = pd.DataFrame(resultados)
     sucesso = tabela.loc[tabela['status'].eq('sucesso')]
+    validacao_factual = (
+        tabela['status_validacao_factual']
+        if 'status_validacao_factual' in tabela
+        else pd.Series(index=tabela.index, dtype='object')
+    )
     tokens = pd.to_numeric(tabela['tokens_totais'], errors='coerce')
     latencias = pd.to_numeric(tabela['latencia_segundos'], errors='coerce')
     retries = pd.to_numeric(tabela['retries'], errors='coerce').fillna(0)
@@ -201,6 +216,10 @@ def calcular_metricas(resultados):
     return {
         'clientes_com_sucesso': int(tabela['status'].eq('sucesso').sum()),
         'clientes_com_erro': int(tabela['status'].eq('erro').sum()),
+        'respostas_com_alertas_factualidade': int(validacao_factual.eq('com_alertas').sum()),
+        'clientes_com_erro_tecnico': int(
+            (tabela['status'].eq('erro') & ~validacao_factual.eq('com_alertas')).sum()
+        ),
         'tokens_totais_consumidos': int(tokens.fillna(0).sum()),
         'tokens_medios_por_sucesso': (
             float(tokens_sucesso.mean()) if tokens_sucesso.notna().any() else None
