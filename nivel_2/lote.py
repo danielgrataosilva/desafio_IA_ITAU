@@ -114,6 +114,7 @@ def _montar_registro(cliente_ranking, analise):
         'tokens_pensamento': metricas.get('tokens_pensamento'),
         'tokens_totais': metricas.get('tokens_totais'),
         'latencia_segundos': metricas.get('latencia_total_segundos'),
+        'chamadas_api': metricas.get('chamadas_api'),
         'retries': analise.get('quantidade_retries', 0),
         'erro_final': analise.get('erro_api'),
     }

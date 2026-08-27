@@ -247,9 +247,77 @@ def _executar_tool(nome, argumentos, cliente_id):
     return funcoes[nome](**argumentos_validados), True
 
 
-def _chamar_com_retry(cliente_gemini, modelo, conteudos, configuracao):
+def _inteiro_ou_none(valor):
+    return int(valor) if valor is not None else None
+
+
+def _metricas_uso_individual(resposta):
+    """Extrai somente métricas expostas pelo SDK para uma resposta específica."""
+    uso = getattr(resposta, 'usage_metadata', None)
+    if uso is None:
+        return {
+            'tokens_entrada': None,
+            'tokens_saida': None,
+            'tokens_pensamento': None,
+            'tokens_totais': None,
+            # O SDK Google GenAI usado pelo projeto não expõe custo por resposta.
+            'custo_monetario': None,
+        }
+    return {
+        'tokens_entrada': _inteiro_ou_none(getattr(uso, 'prompt_token_count', None)),
+        'tokens_saida': _inteiro_ou_none(getattr(uso, 'candidates_token_count', None)),
+        'tokens_pensamento': _inteiro_ou_none(getattr(uso, 'thoughts_token_count', None)),
+        'tokens_totais': _inteiro_ou_none(getattr(uso, 'total_token_count', None)),
+        # O SDK Google GenAI usado pelo projeto não expõe custo por resposta.
+        'custo_monetario': None,
+    }
+
+
+def _registrar_chamada_api(
+    metricas,
+    *,
+    sequencia,
+    modelo,
+    etapa,
+    tentativa,
+    status,
+    inicio,
+    resposta=None,
+    erro=None,
+    codigo_http=None,
+):
+    """Registra uma tentativa realmente enviada ao provedor, inclusive falhas."""
+    uso = _metricas_uso_individual(resposta) if resposta is not None else {
+        'tokens_entrada': None,
+        'tokens_saida': None,
+        'tokens_pensamento': None,
+        'tokens_totais': None,
+        'custo_monetario': None,
+    }
+    metricas['chamadas_api'].append(
+        {
+            'sequencia': sequencia,
+            'provedor': 'google-ai-studio',
+            'modelo': modelo,
+            'etapa': etapa,
+            'tentativa': tentativa,
+            'status': status,
+            'latencia_segundos': round(time.perf_counter() - inicio, 3),
+            **uso,
+            'erro': str(erro) if erro is not None else None,
+            'codigo_http': codigo_http,
+            'tipo_erro': type(erro).__name__ if erro is not None else None,
+        }
+    )
+
+
+def _chamar_com_retry(cliente_gemini, modelo, conteudos, configuracao, etapa, metricas):
+    """Chama o provedor e preserva no histórico cada tentativa real enviada."""
+    metricas['proxima_sequencia_api'] += 1
+    sequencia = metricas['proxima_sequencia_api']
     tentativas = []
     for tentativa in range(1, MAX_TENTATIVAS_API + 1):
+        inicio_tentativa = time.perf_counter()
         try:
             resposta = cliente_gemini.models.generate_content(
                 model=modelo,
@@ -257,14 +325,45 @@ def _chamar_com_retry(cliente_gemini, modelo, conteudos, configuracao):
                 config=configuracao,
             )
             tentativas.append({'tentativa': tentativa, 'status': 'sucesso'})
+            _registrar_chamada_api(
+                metricas,
+                sequencia=sequencia,
+                modelo=modelo,
+                etapa=etapa,
+                tentativa=tentativa,
+                status='sucesso',
+                inicio=inicio_tentativa,
+                resposta=resposta,
+            )
             return resposta, tentativas, None
         except httpx.TimeoutException as erro:
             tentativas.append({'tentativa': tentativa, 'status': 'timeout', 'erro': str(erro)})
+            _registrar_chamada_api(
+                metricas,
+                sequencia=sequencia,
+                modelo=modelo,
+                etapa=etapa,
+                tentativa=tentativa,
+                status='timeout',
+                inicio=inicio_tentativa,
+                erro=erro,
+            )
             return None, tentativas, str(erro)
         except (errors.ServerError, errors.ClientError) as erro:
             codigo = getattr(erro, 'code', None)
             tentativas.append(
                 {'tentativa': tentativa, 'status': 'erro_api', 'codigo': codigo, 'erro': str(erro)}
+            )
+            _registrar_chamada_api(
+                metricas,
+                sequencia=sequencia,
+                modelo=modelo,
+                etapa=etapa,
+                tentativa=tentativa,
+                status='erro_api',
+                inicio=inicio_tentativa,
+                erro=erro,
+                codigo_http=codigo,
             )
             if codigo not in CODIGOS_TRANSITORIOS or tentativa == MAX_TENTATIVAS_API:
                 return None, tentativas, str(erro)
@@ -276,7 +375,6 @@ def _chamar_com_retry(cliente_gemini, modelo, conteudos, configuracao):
                 }
             )
             time.sleep(ESPERA_RETRY_SEGUNDOS)
-
 
 def _acumular_uso(metricas, resposta):
     uso = getattr(resposta, 'usage_metadata', None)
@@ -306,6 +404,8 @@ def analisar_cliente(cliente_id):
         'tokens_pensamento': 0,
         'tokens_totais': 0,
         'pensamentos_disponiveis': False,
+        'chamadas_api': [],
+        'proxima_sequencia_api': 0,
     }
     resultado = {
         'status_final': 'nao_executado',
@@ -345,9 +445,15 @@ def analisar_cliente(cliente_id):
         types.Content(role='user', parts=[types.Part(text=_prompt_inicial(contexto))])
     ]
 
+    etapa_chamada = 'decisao_tool'
     while resultado['quantidade_chamadas_tools'] < MAX_CHAMADAS_TOOLS:
         resposta, tentativas, erro = _chamar_com_retry(
-            cliente_gemini, modelo, conteudos, configuracao_tools
+            cliente_gemini,
+            modelo,
+            conteudos,
+            configuracao_tools,
+            etapa_chamada,
+            metricas,
         )
         resultado['tentativas_api'].extend(tentativas)
         resultado['quantidade_retries'] += sum(
@@ -385,6 +491,7 @@ def analisar_cliente(cliente_id):
 
         if respostas_tools:
             conteudos.append(types.Content(role='user', parts=respostas_tools))
+            etapa_chamada = 'continuacao_apos_tool'
         if resultado['quantidade_chamadas_tools'] >= MAX_CHAMADAS_TOOLS:
             resultado['limite_tools_atingido'] = True
             break
@@ -411,7 +518,12 @@ def analisar_cliente(cliente_id):
         response_schema=ParecerAgente,
     )
     resposta_final, tentativas_finais, erro_final = _chamar_com_retry(
-        cliente_gemini, modelo, conteudos, configuracao_final
+        cliente_gemini,
+        modelo,
+        conteudos,
+        configuracao_final,
+        'parecer_final',
+        metricas,
     )
     resultado['tentativas_api'].extend(tentativas_finais)
     resultado['quantidade_retries'] += sum(
@@ -458,4 +570,5 @@ def _finalizar_metricas(metricas, inicio):
         ),
         'tokens_totais': metricas['tokens_totais'] or None,
         'latencia_total_segundos': round(time.perf_counter() - inicio, 3),
+        'chamadas_api': metricas['chamadas_api'],
     }

@@ -120,6 +120,22 @@ class TesteLoteSintetico(unittest.TestCase):
             self.assertEqual(chamadas, ['CLI-S-1', 'CLI-S-2'])
             self.assertEqual(len(carregar_resultados(caminho)), 2)
 
+    def test_output_antigo_sem_chamadas_api_permanece_compativel(self):
+        with tempfile.TemporaryDirectory() as diretorio:
+            caminho = Path(diretorio) / 'resultado_antigo.json'
+            caminho.write_text(
+                '{\n  "resultados": [{"cliente_id": "CLI-ANTIGO", "status": "sucesso", '
+                '"nivel_risco": "médio", "tokens_totais": 15, "latencia_segundos": 0.5, '
+                '"retries": 0}]\n}',
+                encoding='utf-8',
+            )
+            resultados = carregar_resultados(caminho)
+
+        self.assertNotIn('chamadas_api', resultados[0])
+        metricas = calcular_metricas(resultados)
+        self.assertEqual(metricas['clientes_com_sucesso'], 1)
+        self.assertEqual(metricas['tokens_totais_consumidos'], 15)
+
     def test_metricas_parciais(self):
         resultados = [
             {**CLIENTES[0], **_registro_sucesso_para_metricas()},
