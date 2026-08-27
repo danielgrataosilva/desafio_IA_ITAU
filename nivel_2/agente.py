@@ -13,6 +13,7 @@ from google import genai
 from google.genai import errors, types
 from pydantic import BaseModel, ValidationError
 
+
 try:
     from . import tools as tools_nivel_2
     from .pipeline import executar_pipeline
@@ -125,6 +126,8 @@ Recebeu apenas este contexto determin\u00edstico m\u00ednimo:
 
 Decida autonomamente se precisa de uma ou mais tools para compreender o caso. N\u00e3o calcule, recalcule ou altere valores, medianas, limites ou flags. N\u00e3o invente fatos, datas, legisla\u00e7\u00e3o, regulamenta\u00e7\u00e3o, inten\u00e7\u00e3o ou motiva\u00e7\u00e3o do cliente. Use `operacoes_do_dia` somente quando tiver uma data concreta fornecida por fatos ou por uma tool. Ferramentas devem ser escolhidas por necessidade, n\u00e3o chamadas automaticamente.
 
+Cálculos quantitativos pertencem ao código/Pandas. Use somente números já fornecidos pelas evidências e não crie percentuais, proporções, médias, somas ou comparações quantitativas derivadas. Quando uma tool informar `percentual_uso`, ele representa exclusivamente a participação na quantidade de operações; não representa percentual de volume financeiro.
+
 Ao terminar as consultas necess\u00e1rias, aguarde a solicita\u00e7\u00e3o de parecer final estruturado. O parecer deve usar linguagem de possibilidade, apoiar a triagem humana e n\u00e3o concluir definitivamente lavagem de dinheiro.
 """
 
@@ -141,6 +144,8 @@ def _prompt_final(contexto, tools_utilizadas, limite_atingido):
 
 Se uma data foi consultada sem os detalhes de outras datas, não cite valores, canais, contrapartes ou operações dessas outras datas. Se um detalhe relevante não foi consultado, declare que ele não foi consultado ou que não há evidência suficiente, em vez de estimá-lo. Não recalcule valores, não invente informações e não atribua intenção, motivação, legislação ou regulamentação. Linguagem interpretativa deve ser condicional, por exemplo 'pode ser compatível com' ou 'merece análise'. Declare que se trata de apoio à triagem humana, não de conclusão definitiva.
 
+Não crie cálculos quantitativos derivados. Um campo `percentual_uso` refere-se somente à participação na quantidade de operações e nunca ao percentual do volume financeiro. Não transforme esse campo em percentual de volume, nem calcule novas proporções, médias, somas ou comparações quantitativas. Utilize somente valores quantitativos explicitamente presentes nas evidências.
+
 As tools efetivamente usadas foram: {json.dumps(tools_utilizadas, ensure_ascii=False)}.
 Retorne exatamente os campos do schema solicitado, incluindo essa mesma lista em `tools_utilizadas`.
 """
@@ -148,6 +153,14 @@ Retorne exatamente os campos do schema solicitado, incluindo essa mesma lista em
 
 PADRAO_DATA_ISO = re.compile(r'\b\d{4}-\d{2}-\d{2}\b')
 PADRAO_VALOR_MONETARIO = re.compile(r'R\$\s*([0-9][0-9.\s]*(?:,[0-9]{1,2})?)')
+PADRAO_PERCENTUAL_DO_VOLUME = re.compile(
+    r'(?<!\d)([0-9]{1,3}(?:[.,][0-9]{1,4})?)\s*%\s*(?:do|da|de)\s+(?:volume|volume financeiro)\b',
+    re.IGNORECASE,
+)
+PADRAO_PERCENTUAL_OPERACOES_E_VOLUME = re.compile(
+    r'(?<!\d)([0-9]{1,3}(?:[.,][0-9]{1,4})?)\s*%\s+(?:das?\s+operações|do\s+número\s+de\s+operações)[^.;]{0,80}\b(?:e|ou)\s+(?:do|da)\s+volume\b',
+    re.IGNORECASE,
+)
 
 
 def _normalizar_valor_monetario(texto):
@@ -175,6 +188,40 @@ def _coletar_evidencias_especificas(valor, datas, valores):
         valores.add(round(float(valor), 2))
 
 
+def _normalizar_percentual(texto):
+    try:
+        return round(float(str(texto).replace(',', '.')), 2)
+    except ValueError:
+        return None
+
+
+def _coletar_percentuais_uso(valor, percentuais):
+    if isinstance(valor, dict):
+        percentual = valor.get('percentual_uso')
+        if isinstance(percentual, (int, float)) and not isinstance(percentual, bool):
+            percentuais.add(round(float(percentual), 2))
+        for item in valor.values():
+            _coletar_percentuais_uso(item, percentuais)
+    elif isinstance(valor, list):
+        for item in valor:
+            _coletar_percentuais_uso(item, percentuais)
+
+
+def _percentuais_uso_apresentados_como_volume(texto, percentuais_uso):
+    # Detecta somente a extrapolação explícita de percentual_uso para volume.
+    if not percentuais_uso:
+        return []
+    ocorrencias = []
+    for padrao in (PADRAO_PERCENTUAL_DO_VOLUME, PADRAO_PERCENTUAL_OPERACOES_E_VOLUME):
+        for item in padrao.findall(texto):
+            percentual = _normalizar_percentual(item)
+            if percentual is not None and any(
+                abs(percentual - evidencia) <= 0.01 for evidencia in percentuais_uso
+            ):
+                ocorrencias.append(percentual)
+    return sorted(set(ocorrencias))
+
+
 def _validar_rastreabilidade_basica(contexto, tools_chamadas, parecer):
     """Sinaliza datas e valores monetários citados sem evidência consultada.
 
@@ -182,13 +229,16 @@ def _validar_rastreabilidade_basica(contexto, tools_chamadas, parecer):
     contrapartes. Sem alerta automático não equivale a comprovação factual; a
     revisão humana continua necessária.
     """
-    datas_evidencia, valores_evidencia = set(), set()
+    datas_evidencia, valores_evidencia, percentuais_uso = set(), set(), set()
     _coletar_evidencias_especificas(contexto, datas_evidencia, valores_evidencia)
+    _coletar_percentuais_uso(contexto, percentuais_uso)
     for chamada in tools_chamadas:
         if chamada.get('executada'):
+            resultado_tool = chamada.get('resultado')
             _coletar_evidencias_especificas(
-                chamada.get('resultado'), datas_evidencia, valores_evidencia
+                resultado_tool, datas_evidencia, valores_evidencia
             )
+            _coletar_percentuais_uso(resultado_tool, percentuais_uso)
 
     texto_parecer = json.dumps(parecer, ensure_ascii=False)
     datas_sem_evidencia = sorted(set(PADRAO_DATA_ISO.findall(texto_parecer)) - datas_evidencia)
@@ -205,6 +255,15 @@ def _validar_rastreabilidade_basica(contexto, tools_chamadas, parecer):
         alertas.append(
             f'Valores monetários sem evidência consultada: '
             f'{[f"R$ {valor:,.2f}" for valor in valores_sem_evidencia]}.'
+        )
+    percentuais_como_volume = _percentuais_uso_apresentados_como_volume(
+        texto_parecer,
+        percentuais_uso,
+    )
+    if percentuais_como_volume:
+        alertas.append(
+            'Percentual de uso apresentado como percentual de volume: '
+            f'{percentuais_como_volume}.'
         )
     return {
         'status': 'com_alertas' if alertas else 'sem_alertas_automaticos',

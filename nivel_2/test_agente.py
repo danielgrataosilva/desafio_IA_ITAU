@@ -136,6 +136,79 @@ class TesteObservabilidadeChamadaApi(unittest.TestCase):
         self.assertTrue(all(item['codigo_http'] == 429 for item in metricas['chamadas_api']))
         self.assertEqual([item['latencia_segundos'] for item in metricas['chamadas_api']], [0.6, 0.8])
 
+    def _evidencias_percentual_uso(self):
+        return [
+            {
+                'nome': 'perfil_canal',
+                'executada': True,
+                'resultado': {
+                    'canais': [
+                        {'canal': 'pix', 'percentual_uso': 36.36363636363637},
+                    ]
+                },
+            }
+        ]
+
+    def _parecer_textual(self, texto):
+        return {
+            'cliente_id': 'CLI-TESTE',
+            'nivel_risco': 'médio',
+            'tipologia_suspeita': 'teste',
+            'red_flags': [texto],
+            'justificativa': texto,
+            'tools_utilizadas': ['perfil_canal'],
+            'recomendacao_analista': None,
+        }
+
+    def test_percentual_uso_das_operacoes_e_permitido(self):
+        resultado = agente._validar_rastreabilidade_basica(
+            {'cliente_id': 'CLI-TESTE'},
+            self._evidencias_percentual_uso(),
+            self._parecer_textual('PIX concentra 36,36% das operações.'),
+        )
+        self.assertEqual(resultado['alertas'], [])
+
+    def test_percentual_uso_do_numero_de_operacoes_e_permitido(self):
+        resultado = agente._validar_rastreabilidade_basica(
+            {'cliente_id': 'CLI-TESTE'},
+            self._evidencias_percentual_uso(),
+            self._parecer_textual('PIX concentra 36,36% do número de operações.'),
+        )
+        self.assertEqual(resultado['alertas'], [])
+
+    def test_percentual_uso_apresentado_como_volume_gera_alerta(self):
+        resultado = agente._validar_rastreabilidade_basica(
+            {'cliente_id': 'CLI-TESTE'},
+            self._evidencias_percentual_uso(),
+            self._parecer_textual('PIX representa 36,36% do volume.'),
+        )
+        self.assertIn('Percentual de uso apresentado como percentual de volume: [36.36].', resultado['alertas'])
+
+    def test_percentual_uso_das_operacoes_e_do_volume_gera_alerta(self):
+        resultado = agente._validar_rastreabilidade_basica(
+            {'cliente_id': 'CLI-TESTE'},
+            self._evidencias_percentual_uso(),
+            self._parecer_textual('PIX representa 36,36% das operações e do volume.'),
+        )
+        self.assertIn('Percentual de uso apresentado como percentual de volume: [36.36].', resultado['alertas'])
+
+    def test_datas_e_valores_monetarios_continuam_validados(self):
+        resultado = agente._validar_rastreabilidade_basica(
+            {'data': '2026-03-01', 'valor': 100.0},
+            [],
+            self._parecer_textual('O evento de 2026-03-02 teve valor de R$ 200,00.'),
+        )
+        self.assertTrue(any('Datas sem evidência' in alerta for alerta in resultado['alertas']))
+        self.assertTrue(any('Valores monetários sem evidência' in alerta for alerta in resultado['alertas']))
+
+    def test_resposta_sem_percentual_permanece_sem_alerta(self):
+        resultado = agente._validar_rastreabilidade_basica(
+            {'cliente_id': 'CLI-TESTE'},
+            self._evidencias_percentual_uso(),
+            self._parecer_textual('O uso do canal merece análise.'),
+        )
+        self.assertEqual(resultado['alertas'], [])
+
     def test_metricas_indisponiveis_sao_none_e_nao_zero(self):
         metricas = metricas_vazias()
         with patch.object(agente.time, 'perf_counter', side_effect=[8.0, 8.2]):
