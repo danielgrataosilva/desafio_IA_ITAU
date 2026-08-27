@@ -1,0 +1,72 @@
+# Autodeclaração da entrega.
+# Atualizar os campos marcados como PREENCHER antes do envio final.
+
+candidato: "PREENCHER NOME"
+modelo_usado: "gemini-3.6-flash (lote atual); gemini-3.7-flash (testes anteriores)"
+provedor: "google-ai-studio"
+horas_dedicadas: "PREENCHER"
+
+nivel_1:
+  limpeza_dados:
+    status: completo
+    onde: "nivel_1/nivel_1.ipynb"
+    nota: "Limpeza com remoção de duplicata exata, preservação de registro sem data e normalização monetária com taxa fixa do JSON."
+
+  regras_pandas:
+    status: completo
+    onde: "nivel_1/nivel_1.ipynb"
+    nota: "Regra 1 de fracionamento e Regra 2 de valor atípico implementadas deterministicamente com Pandas/Python."
+
+  validacao_regras:
+    status: completo
+    onde: "nivel_1/nivel_1.ipynb"
+    nota: "Inclui validação de caso positivo de fracionamento e caso semelhante negativo, além da validação do caso atípico."
+
+  saida_estruturada:
+    status: completo
+    onde: "nivel_1/nivel_1.ipynb"
+    nota: "Parecer estruturado validado com Pydantic, incluindo tratamento de resposta propositalmente malformada."
+
+  comparacao_prompts:
+    status: completo
+    onde: "nivel_1/nivel_1.ipynb e docs/DECISOES.md"
+    nota: "Dois prompts comparados em controle, factualidade, tokens e latência."
+
+nivel_2:
+  regras_em_escala:
+    status: completo
+    onde: "nivel_2/pipeline.py e nivel_2/nivel_2.ipynb"
+    nota: "Mesma lógica determinística do Nível 1 aplicada à base maior; Top 10 calculado por quantidade de sinalizações com desempate por volume."
+
+  ferramentas:
+    status: completo
+    onde: "nivel_2/tools.py"
+    nota: "Implementadas historico_cliente, operacoes_do_dia e perfil_canal."
+
+  agente:
+    status: completo
+    onde: "nivel_2/agente.py"
+    nota: "Function calling com escolha contextual das tools, execução local, validação estruturada e checagem factual parcial."
+
+  lote:
+    status: parcial
+    onde: "nivel_2/lote.py e outputs/lote_nivel_2_gemini_3_6_flash.json"
+    nota: "Infraestrutura implementada. Execução atual possui 4 registros: 2 sucessos plenos, 1 alerta factual e 1 erro 429; 6 clientes permanecem pendentes por quota."
+
+  confronto:
+    status: parcial
+    onde: "nivel_2/confronto.py e outputs/confronto_nivel_2.json"
+    nota: "Implementação completa, mas o resultado atual possui somente 2 casos comparáveis porque depende dos sucessos válidos do lote parcial."
+
+nivel_3:
+  trilha_escolhida: null
+  status: nao_feito
+  plano: "A prioridade foi consolidar os Níveis 1 e 2. Com mais tempo, uma trilha seria escolhida apenas após completar o lote, melhorar a observabilidade e validar a continuidade de provedor descrita em docs/DECISOES.md."
+
+observacoes:
+  - "O Nível 2 não é declarado totalmente completo porque a execução do Top 10 foi interrompida por quota 429."
+  - "O custo monetário não foi fornecido pelo SDK e não foi estimado."
+  - "A latência atual está registrada principalmente por análise; o detalhamento por chamada individual ainda precisa ser melhorado."
+  - "Resultados de modelos diferentes foram mantidos separados."
+  - "Antes da entrega final, revisar o notebook do Nível 1 e confirmar que a versão final executada está commitada."
+  - "Caso haja troca efetiva de API/provedor antes da entrega, atualizar modelo_usado, provedor, README.md, ENTREGA.yaml, docs/DECISOES.md e docs/USO_DE_IA.md."
